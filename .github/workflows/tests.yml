@@ -1,0 +1,137 @@
+name: tests
+
+# Documentation, the README and the logo cannot break a test, so a change
+# that touches only those does not run the matrix.
+on:
+  push:
+    branches: [main, '*.x']
+    paths-ignore: ['docs/**', 'art/**', '**.md']
+  pull_request:
+    paths-ignore: ['docs/**', 'art/**', '**.md']
+  # Run by hand from the Actions tab, for a commit a push did not trigger.
+  workflow_dispatch:
+
+# Read-only: nothing here needs to write to the repository.
+permissions:
+  contents: read
+
+# A new push supersedes the run it interrupted, rather than queueing a
+# twenty-four-cell matrix behind one that is already out of date.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.3', '8.4', '8.5']
+        laravel: [12, 13]
+        dependencies: [prefer-lowest, prefer-stable]
+        integrations: [present, absent]
+        include:
+          - laravel: 12
+            testbench: ^10.12
+          - laravel: 13
+            testbench: ^11.3
+
+    name: PHP ${{ matrix.php }} / Laravel ${{ matrix.laravel }} / ${{ matrix.dependencies }} / integrations ${{ matrix.integrations }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: dom, curl, libxml, mbstring, zip, fileinfo, sqlite, pdo_sqlite, bcmath, intl
+          coverage: none
+
+      - name: Require the framework under test
+        run: >
+          composer require
+          "laravel/framework:^${{ matrix.laravel }}.0"
+          "orchestra/testbench:${{ matrix.testbench }}"
+          --no-interaction --no-update
+
+      # composer remove rather than deleting vendor directories: a package
+      # with a `files` autoload entry breaks the autoloader when its directory
+      # vanishes, so hiding one is not the same as not having it. The tests
+      # of each integration's own reader skip themselves when it is gone.
+      - name: Remove the optional integrations
+        if: matrix.integrations == 'absent'
+        run: >
+          composer remove --dev --no-interaction --no-update
+          spatie/laravel-query-builder dedoc/scramble nwidart/laravel-modules spatie/laravel-data filament/filament
+
+      - name: Install dependencies
+        run: composer update --${{ matrix.dependencies }} --prefer-dist --no-interaction
+
+      - name: Run tests
+        run: composer test:unit
+
+  postgres:
+    runs-on: ubuntu-latest
+    name: Tests on PostgreSQL 18 / PHP 8.4
+
+    # The suite runs on SQLite everywhere else. PostgreSQL refuses what
+    # SQLite coerces, and aborts a transaction on a failed statement where
+    # SQLite carries on, so one run against it catches a class of bug the
+    # matrix cannot.
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_DB: mcp_bridge_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: dom, curl, libxml, mbstring, zip, fileinfo, pdo_pgsql, bcmath, intl
+          coverage: none
+
+      - run: composer update --prefer-dist --no-interaction
+
+      - name: Run tests against PostgreSQL
+        run: composer test:unit
+        env:
+          DB_CONNECTION: pgsql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_DATABASE: mcp_bridge_test
+          DB_USERNAME: postgres
+          DB_PASSWORD: postgres
+
+  quality:
+    runs-on: ubuntu-latest
+    name: lint and types
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+
+      - run: composer update --prefer-dist --no-interaction
+
+      - name: Check formatting
+        run: composer lint:check
+
+      - name: Static analysis
+        run: composer analyse

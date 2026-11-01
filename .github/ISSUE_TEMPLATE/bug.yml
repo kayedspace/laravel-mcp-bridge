@@ -1,0 +1,46 @@
+name: Bug report
+description: Something this package does that it should not
+labels: [bug]
+
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you expected, and what you got instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: How to reproduce it
+      description: >
+        The smallest declaration that shows it: the attribute, the route or
+        command, and the call. The output of `php artisan mcp-bridge:lint`
+        and `mcp-bridge:tools --refused` is often the whole answer.
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Package version
+      placeholder: 0.1.0
+    validations:
+      required: true
+
+  - type: input
+    id: laravel
+    attributes:
+      label: Laravel and PHP version
+      placeholder: Laravel 12.41.1, PHP 8.4
+    validations:
+      required: true
+
+  - type: input
+    id: client
+    attributes:
+      label: Which MCP client
+      description: Claude Code, Cursor, ChatGPT, n8n, the Inspector, or none.
+      placeholder: Claude Code 2.x

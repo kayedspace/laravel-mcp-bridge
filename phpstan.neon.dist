@@ -1,0 +1,18 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    level: max
+    tmpDir: build/phpstan
+    paths:
+        - src
+        - database
+        # config/ is deliberately not analysed. Larastan's env() rule decides
+        # a file is "outside the config directory" by looking for an
+        # application around it, and a package's own config has none, so every
+        # env() default in it reports falsely.
+
+        # The two fixtures that use the traits this package ships, so those
+        # traits are analysed rather than skipped as unused.
+        - tests/Fixtures/AgentUser.php
+        - tests/TestCase.php

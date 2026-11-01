@@ -1,0 +1,17 @@
+{
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vitepress build .",
+    "start": "vitepress preview . --host 0.0.0.0 --port ${PORT:-4173}",
+    "docs:dev": "vitepress dev .",
+    "docs:build": "npm run build",
+    "docs:preview": "vitepress preview ."
+  },
+  "devDependencies": {
+    "mermaid": "^11.17.2",
+    "svg-pan-zoom": "^3.6.2",
+    "vitepress": "^1.6.3",
+    "vitepress-plugin-mermaid": "^2.0.17"
+  }
+}

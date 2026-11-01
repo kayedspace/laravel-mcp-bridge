@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="vendor/autoload.php"
+         colors="true"
+         cacheDirectory=".phpunit.cache"
+         executionOrder="random"
+         beStrictAboutOutputDuringTests="true"
+         failOnEmptyTestSuite="true"
+         failOnWarning="true"
+         failOnRisky="true"
+         failOnDeprecation="true">
+    <testsuites>
+        <testsuite name="Test Suite">
+            <directory>tests</directory>
+        </testsuite>
+    </testsuites>
+    <!-- A deprecation raised by one vendor library inside another is theirs to fix, and only the oldest dependency set triggers one. -->
+    <source ignoreIndirectDeprecations="true">
+        <include>
+            <directory>src</directory>
+        </include>
+    </source>
+    <php>
+        <env name="APP_ENV" value="testing"/>
+        <!-- Pinned, so the .env the workbench build writes into the Testbench skeleton never reaches the suite. CI's PostgreSQL job sets the database variables first and wins. -->
+        <env name="DB_CONNECTION" value="sqlite"/>
+        <env name="DB_DATABASE" value=":memory:"/>
+        <env name="CACHE_STORE" value="array"/>
+        <env name="SESSION_DRIVER" value="array"/>
+        <env name="QUEUE_CONNECTION" value="sync"/>
+        <env name="MAIL_MAILER" value="array"/>
+    </php>
+</phpunit>
