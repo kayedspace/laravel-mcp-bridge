@@ -1,0 +1,60 @@
+{
+  "openapi": "3.1.0",
+  "info": { "title": "Billing", "version": "1.0.0" },
+  "servers": [{ "url": "https://billing.test/api" }],
+  "paths": {
+    "/invoices": {
+      "get": {
+        "operationId": "listInvoices",
+        "summary": "List invoices",
+        "description": "Every invoice for the account, newest first.",
+        "parameters": [
+          { "name": "status", "in": "query", "description": "Only invoices in this state.", "schema": { "type": "string", "enum": ["open", "paid"] } },
+          { "name": "page", "in": "query", "schema": { "type": "integer", "minimum": 1 } }
+        ]
+      },
+      "post": {
+        "operationId": "createInvoice",
+        "summary": "Create an invoice",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/InvoiceInput" } } }
+        }
+      }
+    },
+    "/invoices/{id}": {
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+      "get": { "operationId": "getInvoice", "summary": "Read one invoice" },
+      "delete": { "operationId": "voidInvoice", "summary": "Void an invoice" }
+    },
+    "/reports": {
+      "post": {
+        "operationId": "uploadReport",
+        "requestBody": { "content": { "multipart/form-data": { "schema": { "type": "object" } } } }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "InvoiceInput": {
+        "type": "object",
+        "required": ["customer_id", "lines"],
+        "properties": {
+          "customer_id": { "type": "integer" },
+          "currency": { "type": "string", "default": "EUR" },
+          "lines": { "type": "array", "items": { "$ref": "#/components/schemas/Line" } }
+        }
+      },
+      "Line": {
+        "allOf": [
+          { "$ref": "#/components/schemas/Priced" },
+          { "type": "object", "required": ["description"], "properties": { "description": { "type": "string" } } }
+        ]
+      },
+      "Priced": {
+        "type": "object",
+        "properties": { "amount": { "type": "number" } }
+      }
+    }
+  }
+}
