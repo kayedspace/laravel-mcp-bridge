@@ -1,0 +1,121 @@
+{
+    "$schema": "https://getcomposer.org/schema.json",
+    "name": "kayedspace/laravel-mcp-bridge",
+    "description": "Turn what your Laravel app already declares (routes, Artisan commands, jobs, actions and models) into an MCP server for AI agents, on top of laravel/mcp.",
+    "keywords": [
+        "laravel",
+        "mcp",
+        "model-context-protocol",
+        "ai",
+        "agents",
+        "api",
+        "rest",
+        "openapi",
+        "artisan",
+        "tools"
+    ],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Ali Youssef Kayed",
+            "email": "3likayed@gmail.com"
+        }
+    ],
+    "homepage": "https://laravel-mcp-bridge.kayed.dev",
+    "support": {
+        "issues": "https://github.com/kayedspace/laravel-mcp-bridge/issues",
+        "source": "https://github.com/kayedspace/laravel-mcp-bridge",
+        "docs": "https://laravel-mcp-bridge.kayed.dev"
+    },
+    "require": {
+        "php": "^8.3",
+        "illuminate/console": "^12.41.1|^13.0",
+        "illuminate/contracts": "^12.41.1|^13.0",
+        "illuminate/http": "^12.41.1|^13.0",
+        "illuminate/log": "^12.41.1|^13.0",
+        "illuminate/pipeline": "^12.41.1|^13.0",
+        "illuminate/support": "^12.41.1|^13.0",
+        "laravel/mcp": "^1.1",
+        "nikic/php-parser": "^5.9",
+        "symfony/process": "^7.4|^8.0"
+    },
+    "require-dev": {
+        "dedoc/scramble": "^0.13.25",
+        "filament/filament": "^5.0",
+        "larastan/larastan": "^3.13",
+        "laravel/doctor": "^0.1.0",
+        "laravel/pint": "^1.32",
+        "laravel/sanctum": "^4.0",
+        "nwidart/laravel-modules": "^13.0",
+        "orchestra/testbench": "^10.12|^11.3",
+        "pestphp/pest": "^4.7|^5.3",
+        "pestphp/pest-plugin-laravel": "^4.1|^5.0",
+        "spatie/laravel-data": "^4.0",
+        "spatie/laravel-query-builder": "^6.0|^7.0"
+    },
+    "conflict": {
+        "dedoc/scramble": "<0.13.25"
+    },
+    "suggest": {
+        "spatie/laravel-query-builder": "Expose allowed filters, sorts, includes and fields as typed tool inputs.",
+        "dedoc/scramble": "Reuse existing OpenAPI parameter attributes as tool input schemas, in both directions, and inferred responses as output schemas.",
+        "nwidart/laravel-modules": "Discover and group tools per module in a modular application.",
+        "lorisleiva/laravel-actions": "Expose action classes as tools using their own rules() and authorize().",
+        "spatie/laravel-data": "Read a Data class's validation rules as a tool's input schema, named by #[McpInput] or type-hinted by an action or job.",
+        "filament/filament": "A panel page where a signed-in user issues and revokes their own agent tokens: McpBridgePlugin.",
+        "laravel/doctor": "This package's checks beside the framework's in php artisan doctor."
+    },
+    "autoload": {
+        "psr-4": {
+            "KayedSpace\\McpBridge\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "KayedSpace\\McpBridge\\Tests\\": "tests/",
+            "Workbench\\App\\": "workbench/app/",
+            "Workbench\\Database\\Factories\\": "workbench/database/factories/",
+            "Workbench\\Database\\Seeders\\": "workbench/database/seeders/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "KayedSpace\\McpBridge\\McpBridgeServiceProvider"
+            ],
+            "aliases": {
+                "McpBridge": "KayedSpace\\McpBridge\\Facades\\McpBridge"
+            }
+        }
+    },
+    "scripts": {
+        "post-autoload-dump": [
+            "@prepare"
+        ],
+        "prepare": "testbench package:discover --ansi",
+        "build": "testbench workbench:build --ansi",
+        "serve": [
+            "@build",
+            "testbench serve --ansi"
+        ],
+        "analyse": "phpstan analyse",
+        "lint": "pint --parallel",
+        "lint:check": "pint --parallel --test",
+        "test:unit": "pest",
+        "test": [
+            "@analyse",
+            "@lint:check",
+            "@test:unit"
+        ],
+        "mutate": "pest --mutate --everything --covered-only --parallel --min=75 --class=KayedSpace\\\\McpBridge\\\\Schema --class=KayedSpace\\\\McpBridge\\\\Query --class=KayedSpace\\\\McpBridge\\\\Security"
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true,
+            "wikimedia/composer-merge-plugin": false
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

@@ -1,0 +1,21 @@
+* text=auto eol=lf
+
+# Everything a consumer does not need in `composer require`. The design
+# document alone is larger than the source, and none of this runs in an
+# application.
+/.agents            export-ignore
+/art                export-ignore
+/AGENTS.md          export-ignore
+/docs               export-ignore
+/testbench.yaml     export-ignore
+/workbench          export-ignore
+/.editorconfig      export-ignore
+/.gitattributes     export-ignore
+/.github            export-ignore
+/.gitignore         export-ignore
+/.idea              export-ignore
+/tests              export-ignore
+/composer.lock      export-ignore
+/phpstan.neon.dist  export-ignore
+/phpunit.xml.dist   export-ignore
+/pint.json          export-ignore
