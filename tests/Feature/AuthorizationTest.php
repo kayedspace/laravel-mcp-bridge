@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 use KayedSpace\McpBridge\Contracts\AuthorizesTools;
+use KayedSpace\McpBridge\Data\ToolDefinition;
 use KayedSpace\McpBridge\Manifest\ManifestCompiler;
 use KayedSpace\McpBridge\Security\ActorResolver;
 use KayedSpace\McpBridge\Security\ConfirmationHandles;
@@ -125,6 +126,54 @@ it('counts the rate limit per actor, not globally', function () {
     $gate->check(callTool($definition, actor: new TokenUser(['reports:read'], 201)));
 
     expect($gate->check(callTool($definition, actor: new TokenUser(['reports:read'], 202))))->toBeNull();
+});
+
+describe('a rate limit that cannot be read', function () {
+    it('refuses the tool rather than serving it with no limit', function () {
+        config(['mcp-bridge.routes' => ['api.v1.reports.index' => ['rate_limit' => '1000/day']]]);
+
+        $result = compileFixtures();
+        $refusal = $result->refusals['route:api.v1.reports.index:GET'][0] ?? null;
+
+        expect($result->names())->not->toContain('list_reports')
+            ->and($refusal?->code)->toBe('MCP_BRIDGE_INVALID_RATE_LIMIT')
+            ->and($refusal?->message)->toContain('[1000/day]')
+            ->and($refusal?->message)->toContain('[routes.api.v1.reports.index.rate_limit]');
+    });
+
+    it('costs only the tools it would have limited', function () {
+        $served = compileFixtures()->names();
+
+        config(['mcp-bridge.sources.route.rate_limit' => '10/min']);
+
+        $refused = array_keys(array_filter(
+            compileFixtures()->refusals,
+            fn (array $refusals): bool => $refusals[0]->code === 'MCP_BRIDGE_INVALID_RATE_LIMIT',
+        ));
+
+        // Every tool that was served, and nothing that was already refused
+        // for another reason, such as not being opted in. list_reports keeps
+        // its own attribute, which is readable.
+        expect($refused)->toHaveCount(count($served) - 1)
+            ->and(compileFixtures()->names())->toBe(['list_reports']);
+    });
+
+    it('treats a blank limit as none, as it always did', function () {
+        config(['mcp-bridge.sources.route.rate_limit' => '']);
+
+        expect(toolNamed('list_courses')->limits->rateLimit)->toBeNull();
+    });
+
+    it('refuses a call from a manifest built before the compiler refused it', function () {
+        $stale = ToolDefinition::fromArray([
+            ...toolNamed('list_reports')->toArray(),
+            'limits' => ['timeout' => 30, 'rate_limit' => '1000/day'],
+        ]);
+
+        $refusal = app(AuthorizesTools::class)->check(callTool($stale, actor: new TokenUser(['reports:read'], 301)));
+
+        expect($refusal?->errorCode)->toBe('MCP_BRIDGE_INVALID_RATE_LIMIT');
+    });
 });
 
 describe('confirmation', function () {

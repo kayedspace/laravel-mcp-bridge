@@ -14,6 +14,7 @@ These explain why a candidate was found and not exposed. They show in `mcp-bridg
 | `MCP_BRIDGE_IGNORED` | The candidate carries `#[McpIgnore]`, or your documentation excludes it. |
 | `MCP_BRIDGE_SOURCE_REFUSED` | A source or the authority rule refused it. The message names the cause: a missing scope or ability, a denied command, a command outside the allowed namespaces, a model with no policy or a silent policy, or a signature that cannot be built from JSON. The lint reports it as an error. |
 | `MCP_BRIDGE_NAME_TAKEN` | An earlier candidate already holds the tool name this one compiles to. The message names the holder and the fix: give it `#[McpTool(name: ...)]`, or a route override. The build succeeds and every other tool is served. The lint reports the collision as `MCP_BRIDGE_LINT_COLLISION`. See [collisions](/concepts/naming#collisions). |
+| `MCP_BRIDGE_INVALID_RATE_LIMIT` | The rate limit the tool would run with cannot be read, so the tool is not served rather than served with no limit. The message names the value and where it was set: `routes.<name>.rate_limit`, `#[McpRateLimit]` or `sources.<key>.rate_limit`. Asked only of a candidate nothing else refused. The lint reports it as an error. |
 
 ## Refusals at call time
 
@@ -26,6 +27,7 @@ Returned by the gate before the source runs.
 | `MCP_BRIDGE_ACCESS` | The application's `accessMcp` gate denied this account, so it may use none of this server's tools. "Do not retry." |
 | `MCP_BRIDGE_FORBIDDEN` | The Gate denied a declared ability. Also used when a route, action or model policy answers 403. "Do not retry." |
 | `MCP_BRIDGE_RATE_LIMITED` | The per-tool limit was hit. Includes the seconds to wait. Also used for a 429 from a route. |
+| `MCP_BRIDGE_INVALID_RATE_LIMIT` | The tool's rate limit cannot be read. Only a manifest built before the compiler refused such a tool can carry one; rebuild it. "Do not retry." |
 | `MCP_BRIDGE_UNKNOWN_ARGUMENT` | An argument no field of the tool declares. The message names the arguments the tool accepts, so the agent can correct the call. Checked after the gate, so only a caller allowed to run the tool learns them. A tool that declares no inputs lets everything through, because a remote tool with a free-form schema looks the same as one with none. |
 | `MCP_BRIDGE_CONFIRMATION_REQUIRED` | Not an error. A destructive tool answered with a preview and a handle. `isError` is `false`. |
 | `MCP_BRIDGE_CONFIRMATION_EXPIRED` | The handle was already used, has expired, was forged, or the arguments, tool or actor changed. Call again without it. |
@@ -64,6 +66,7 @@ Returned after a source ran, mapped by `ErrorMapper`.
 | --- | --- | --- |
 | `MCP_BRIDGE_SOURCE_REFUSED` | error | Something that is meant to be exposed will not be. |
 | `MCP_BRIDGE_LINT_COLLISION` | error | Two candidates compile to one tool name. |
+| `MCP_BRIDGE_INVALID_RATE_LIMIT` | error | A rate limit that cannot be read, so the tool is not served. |
 | `MCP_BRIDGE_LINT_INTERACTIVE` | error | A command calls a prompt, and an agent cannot answer one. |
 | `MCP_BRIDGE_LINT_NO_DESCRIPTION` | warning | A description will be generated. |
 | `MCP_BRIDGE_LINT_DIVERGENCE` | warning | A documentation attribute and an MCP attribute describe the same field differently. |

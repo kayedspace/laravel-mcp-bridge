@@ -72,6 +72,10 @@ class Linter
                     ...$this->authority->refusals($key, $candidate),
                 ];
 
+                if ($refusals === []) {
+                    $refusals = $this->compiler->limitRefusals($source, $candidate);
+                }
+
                 if ($refusals !== []) {
                     $findings = [...$findings, ...$this->refused($candidate, $refusals, $all)];
 
@@ -110,6 +114,19 @@ class Linter
         $findings = [];
 
         foreach ($refusals as $refusal) {
+            // Never a choice: it is only asked of a candidate that would
+            // otherwise have been served, and somebody wrote the limit.
+            if ($refusal->code === 'MCP_BRIDGE_INVALID_RATE_LIMIT') {
+                $findings[] = Finding::error(
+                    $refusal->code,
+                    $candidate->id,
+                    $refusal->message,
+                    'Until it reads, the tool is not served, because served it would have no limit at all.',
+                );
+
+                continue;
+            }
+
             // The hint asserts the developer meant to expose this, so ask
             // whether they did rather than taking the refusal's word for it.
             // A command is refused for missing authority whether or not

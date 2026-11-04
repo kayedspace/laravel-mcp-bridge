@@ -81,6 +81,20 @@ final readonly class Refusal
         );
     }
 
+    /**
+     * A rate limit that cannot be read. Refused rather than served, because
+     * served it would run with no limit at all, and the developer who wrote
+     * one meant the opposite.
+     */
+    public static function invalidRateLimit(string $id, string $rateLimit, string $setting): self
+    {
+        return new self(
+            'MCP_BRIDGE_INVALID_RATE_LIMIT',
+            "[{$id}] has the rate limit [{$rateLimit}] from [{$setting}], which is not one. "
+                .'Write N/second, N/minute or N/hour, or a window such as N/30seconds or N/5minutes.',
+        );
+    }
+
     public static function destructiveDenied(string $id): self
     {
         return new self(

@@ -57,6 +57,14 @@ class ManifestCompiler
                     ...$this->authority->refusals($source->key(), $candidate),
                 ];
 
+                // Asked only of a candidate nothing else refused, so a bad
+                // source-wide default is reported once per tool it would
+                // have limited, not once per Artisan command the framework
+                // ships and nobody opted in.
+                if ($reasons === []) {
+                    $reasons = $this->limitRefusals($source, $candidate);
+                }
+
                 if ($reasons !== []) {
                     $refusals[$candidate->id] = $reasons;
 
@@ -373,15 +381,59 @@ class ManifestCompiler
         return implode(' ', $parts);
     }
 
+    /**
+     * A candidate whose rate limit cannot be read is refused, because served
+     * it would have no limit at all. One refusal rather than a failed build,
+     * as for a name collision: it costs that tool, visibly, not every tool.
+     *
+     * Public because the lint asks the same question, and a lint that read
+     * limits its own way could pass what the compiler refuses.
+     *
+     * @return list<Refusal>
+     */
+    public function limitRefusals(Source $source, ToolCandidate $candidate): array
+    {
+        $rateLimit = $this->rateLimit($source, $candidate->declared ?? new Declared, $candidate);
+
+        if ($rateLimit === null || Limits::parseRate($rateLimit['value']) !== null) {
+            return [];
+        }
+
+        return [Refusal::invalidRateLimit($candidate->id, $rateLimit['value'], $rateLimit['setting'])];
+    }
+
     protected function limits(Source $source, Declared $declared, ToolCandidate $candidate): Limits
     {
-        $configured = $this->config->get("mcp-bridge.sources.{$source->key()}.rate_limit");
-        $override = $this->override($candidate, 'rate_limit');
-
         return new Limits(
             timeout: $declared->timeout ?? $this->config->integer("mcp-bridge.sources.{$source->key()}.timeout", 30),
-            rateLimit: $override ?? $declared->rateLimit ?? (is_string($configured) ? $configured : null),
+            rateLimit: $this->rateLimit($source, $declared, $candidate)['value'] ?? null,
         );
+    }
+
+    /**
+     * The rate limit a candidate compiles to, and the setting it came from,
+     * so a refusal can say where to fix it. A blank setting is no limit, as
+     * it already was for a route's own entry.
+     *
+     * @return array{value: string, setting: string}|null
+     */
+    protected function rateLimit(Source $source, Declared $declared, ToolCandidate $candidate): ?array
+    {
+        $override = $this->override($candidate, 'rate_limit');
+
+        if ($override !== null && $candidate->target instanceof RouteTarget) {
+            return ['value' => $override, 'setting' => "routes.{$candidate->target->routeName}.rate_limit"];
+        }
+
+        if ($declared->rateLimit !== null) {
+            return ['value' => $declared->rateLimit, 'setting' => '#[McpRateLimit]'];
+        }
+
+        $configured = $this->config->get("mcp-bridge.sources.{$source->key()}.rate_limit");
+
+        return is_string($configured) && $configured !== ''
+            ? ['value' => $configured, 'setting' => "sources.{$source->key()}.rate_limit"]
+            : null;
     }
 
     /**
