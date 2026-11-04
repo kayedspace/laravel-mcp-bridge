@@ -6,7 +6,7 @@ import './style.css'
 
 export default {
   extends: DefaultTheme,
-  enhanceApp({ app, router }) {
+  enhanceApp({ app }) {
     // Copy or download a page as Markdown: registered before the browser
     // check, because the server render needs the component too.
     app.component('CopyOrDownloadAsMarkdownButtons', CopyOrDownloadAsMarkdownButtons)
@@ -14,10 +14,6 @@ export default {
     if (typeof window === 'undefined') {
       return
     }
-
-    // Mermaid renders after the route settles, and the sidebar never reloads
-    // the page, so this watches rather than running once at mount.
-    router.onAfterRouteChange = () => watchForDiagrams()
 
     watchForDiagrams()
   },

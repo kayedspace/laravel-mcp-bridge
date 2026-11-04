@@ -141,5 +141,9 @@ export default withMermaid(defineConfig({
   mermaid: {
     theme: 'base',
     themeVariables: { fontFamily: 'inherit' },
+    // The plugin can start a second render of a diagram before the first
+    // finishes; the loser would flash mermaid's error box before the winner
+    // lands. The winner always lands, so the box only ever misleads.
+    suppressErrorRendering: true,
   },
 })

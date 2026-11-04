@@ -12,8 +12,6 @@
  * drag, pinch and fit-on-resize are four things to get wrong by hand.
  */
 
-const OPENED = 'data-mcp-zoomable'
-
 type PanZoom = {
   zoomIn: () => void
   zoomOut: () => void
@@ -104,48 +102,45 @@ async function open(source: SVGElement): Promise<void> {
   })
 }
 
-export function makeDiagramsZoomable(): void {
-  if (typeof document === 'undefined') {
-    return
-  }
-
+/**
+ * The mermaid plugin re-renders a diagram through v-html whenever the root
+ * element's attributes change (the theme class among them), which replaces
+ * the SVG and anything appended beside it. So the click is delegated from the
+ * document and reads whatever SVG is there at the time, and the button is put
+ * back whenever a re-render took it away.
+ */
+function addButtons(): void {
   for (const container of document.querySelectorAll<HTMLElement>('.mermaid')) {
-    const svg = container.querySelector('svg')
-
-    // Mermaid renders asynchronously, so a container may not have its SVG yet
-    // on the first pass; the observer below brings us back when it does.
-    if (svg === null || container.hasAttribute(OPENED)) {
+    if (container.querySelector('svg') === null || container.querySelector('.diagram-expand') !== null) {
       continue
     }
-
-    container.setAttribute(OPENED, 'true')
 
     const expand = document.createElement('button')
     expand.type = 'button'
     expand.className = 'diagram-expand'
     expand.textContent = 'Expand'
     expand.title = 'Open this diagram full screen'
-    expand.addEventListener('click', () => void open(svg))
-
     container.append(expand)
-    svg.addEventListener('click', () => void open(svg))
   }
 }
 
-/**
- * Mermaid renders after the route has settled, and a reader navigating with
- * the sidebar never reloads the page, so one pass at mount would catch the
- * first diagram and none after it.
- */
 export function watchForDiagrams(): void {
   if (typeof document === 'undefined') {
     return
   }
 
-  makeDiagramsZoomable()
+  document.addEventListener('click', (event) => {
+    const target = event.target as Element
+    const container = target.closest?.('.mermaid')
+    const svg = container?.querySelector('svg')
 
-  new MutationObserver(() => makeDiagramsZoomable()).observe(document.body, {
-    childList: true,
-    subtree: true,
+    if (svg && target.closest('svg, .diagram-expand') && !target.closest('dialog')) {
+      void open(svg)
+    }
   })
+
+  // Mermaid renders after the route settles, and the sidebar never reloads
+  // the page, so this watches the body rather than running once.
+  addButtons()
+  new MutationObserver(addButtons).observe(document.body, { childList: true, subtree: true })
 }
