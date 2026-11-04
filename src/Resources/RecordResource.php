@@ -65,10 +65,11 @@ class RecordResource extends Resource implements HasUriTemplate
         $tool = $request->get('tool');
         $id = $request->get('id');
         $definition = is_string($tool) ? $manifest->find($tool) : null;
+        $key = $definition === null ? null : $this->keyName($definition);
 
         // Only a get tool on this server, so the template reaches nothing a
         // tool on this endpoint could not, and nothing on another one.
-        if ($definition === null || ! is_scalar($id) || ! $this->readsRecords($definition, $keys->current())) {
+        if ($definition === null || $key === null || ! is_scalar($id) || ! $this->readsRecords($definition, $keys->current())) {
             return Response::error('No record tool with that name is served here. Name a get tool, as in app://records/model_get_course/12.');
         }
 
@@ -80,7 +81,7 @@ class RecordResource extends Resource implements HasUriTemplate
 
         $result = $runner->run(new ToolCall(
             definition: $definition,
-            arguments: [$this->keyName($definition) => $id],
+            arguments: [$key => $id],
             actor: $actor,
             requestId: (string) Str::uuid(),
             clientName: 'resource',
@@ -96,8 +97,7 @@ class RecordResource extends Resource implements HasUriTemplate
     protected function readsRecords(ToolDefinition $definition, string $server): bool
     {
         return $definition->server === $server
-            && $definition->source === 'model'
-            && $this->keyName($definition) !== null;
+            && $definition->source === 'model';
     }
 
     /** The input the get tool takes its record's key in. */
