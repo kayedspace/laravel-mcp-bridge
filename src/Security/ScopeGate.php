@@ -78,6 +78,16 @@ class ScopeGate implements AuthorizesTools
             return ToolResult::error('MCP_BRIDGE_FORBIDDEN', $ability);
         }
 
+        // The compiler refuses such a tool, so only a manifest built before
+        // it did can carry one. Refused rather than run, because an unread
+        // limit is no limit, and nobody wrote one meaning that.
+        if ($definition->limits->rateLimitIsInvalid()) {
+            return ToolResult::error(
+                'MCP_BRIDGE_INVALID_RATE_LIMIT',
+                "The tool [{$definition->name}] has a rate limit that cannot be read. Do not retry.",
+            );
+        }
+
         if (($seconds = $this->rateLimited($call)) !== null) {
             return ToolResult::error(
                 'MCP_BRIDGE_RATE_LIMITED',
@@ -173,29 +183,20 @@ class ScopeGate implements AuthorizesTools
     /** @return int|null seconds to wait, or null when the call may proceed */
     protected function rateLimited(ToolCall $call): ?int
     {
-        $limit = $call->definition->limits->rateLimit;
+        $limit = $call->definition->limits->rate();
 
-        if ($limit === null || preg_match('/^(\d+)\/(\d*)\s*(second|minute|hour)s?$/', $limit, $matches) !== 1) {
+        if ($limit === null) {
             return null;
         }
-
-        $attempts = (int) $matches[1];
-        $every = $matches[2] === '' ? 1 : (int) $matches[2];
-
-        $decay = $every * match ($matches[3]) {
-            'second' => 1,
-            'hour' => 3600,
-            default => 60,
-        };
 
         $identifier = $call->actor->getAuthIdentifier();
         $key = 'mcp-bridge:'.$call->definition->name.':'.(is_scalar($identifier) ? $identifier : 'unknown');
 
-        if ($this->limiter->tooManyAttempts($key, $attempts)) {
+        if ($this->limiter->tooManyAttempts($key, $limit->maxAttempts)) {
             return $this->limiter->availableIn($key);
         }
 
-        $this->limiter->hit($key, $decay);
+        $this->limiter->hit($key, $limit->decaySeconds);
 
         return null;
     }

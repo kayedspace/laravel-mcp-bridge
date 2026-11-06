@@ -49,6 +49,25 @@ it('reports a tool with no description, because an agent reads it', function ():
     expect($subjects)->toContain('route:api.v1.courses.show:GET');
 });
 
+it('fails on a rate limit that cannot be read, naming where it was written', function (): void {
+    defineApiRoutes();
+    config()->set('mcp-bridge.routes', ['api.v1.courses.index' => ['rate_limit' => '1000/day']]);
+
+    $findings = findingsOf(lint(), 'MCP_BRIDGE_INVALID_RATE_LIMIT');
+
+    expect($findings)->toHaveCount(1)
+        ->and($findings[0]->level)->toBe(Finding::ERROR)
+        ->and($findings[0]->subject)->toBe('route:api.v1.courses.index:GET')
+        ->and($findings[0]->message)->toContain('[routes.api.v1.courses.index.rate_limit]');
+});
+
+it('says nothing about a readable rate limit', function (): void {
+    defineApiRoutes();
+    config()->set('mcp-bridge.routes', ['api.v1.courses.index' => ['rate_limit' => '1000/hour']]);
+
+    expect(findingsOf(lint(), 'MCP_BRIDGE_INVALID_RATE_LIMIT'))->toBe([]);
+});
+
 it('names tools the way the compiler does, so a prefixed model tool is no collision', function (): void {
     defineApiRoutes();
     config()->set('mcp-bridge.sources.model.enabled', true);

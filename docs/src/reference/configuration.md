@@ -76,7 +76,7 @@ Each source has an `enabled` flag, read at compile time. See [the sources](/sour
 
 ### sources.command
 
-`deny` adds patterns to the built-in floor in `CommandFilter::ALWAYS_DENY`, which emptying it cannot lift, and `allow_denied` is the only escape hatch, one command name at a time. `rate_limit` is per tool and per actor, in the format `N/second`, `N/minute`, `N/hour` or `N/Mminutes`.
+`deny` adds patterns to the built-in floor in `CommandFilter::ALWAYS_DENY`, which emptying it cannot lift, and `allow_denied` is the only escape hatch, one command name at a time. `rate_limit` is per tool and per actor, in the format `N/second`, `N/minute`, `N/hour`, or a window such as `N/30seconds` or `N/5minutes`. A value in any other form refuses the tool with `MCP_BRIDGE_INVALID_RATE_LIMIT` rather than serving it unlimited, and an empty string is no limit.
 
 | Key | Default | Effect |
 | --- | --- | --- |
