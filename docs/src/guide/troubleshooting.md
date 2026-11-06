@@ -20,6 +20,7 @@ Work through these in order.
 | `MCP_BRIDGE_NOT_EXPOSED` | Not opted in. "Add #[McpTool] to opt it in." | Add `#[McpTool]`, or change `mode` for routes. |
 | `MCP_BRIDGE_IGNORED` | It carries `#[McpIgnore]`, or your documentation excludes the route. | Remove it, or set `discovery.respect_docs_exclusions` to `false`. |
 | `MCP_BRIDGE_SOURCE_REFUSED` | The [source](/concepts/how-it-works#glossary) or the [authority](/concepts/how-it-works#glossary) rule said no. The message says why. | See below. |
+| `MCP_BRIDGE_INVALID_RATE_LIMIT` | Its rate limit cannot be read, so it is not served rather than served with no limit. The message names the value and where it was set. | Write `N/second`, `N/minute`, `N/hour` or a window such as `N/5minutes`. |
 
 Typical `MCP_BRIDGE_SOURCE_REFUSED` messages:
 
@@ -65,6 +66,7 @@ The agent reads the message. The code is in `mcp-bridge:call`, the audit trail a
 | `MCP_BRIDGE_SCOPE` | "... the caller holds no token." | The user has `HasMcpTokens` but arrived without a package token: a session or a factory. Connect with a token issued by `mcp-bridge:token`. In a test, give the actor a token: see [tools that declare a scope](/guide/testing#tools-that-declare-a-scope). |
 | `MCP_BRIDGE_FORBIDDEN` | "Not allowed: this tool requires the [x] ability." | The Gate denied the ability for this user. |
 | `MCP_BRIDGE_RATE_LIMITED` | "Retry after n seconds." | Per-tool limit. Raise `#[McpRateLimit]` or `sources.<key>.rate_limit`. |
+| `MCP_BRIDGE_INVALID_RATE_LIMIT` | "has a rate limit that cannot be read." | The manifest was built before the compiler refused such a limit. Run `mcp-bridge:lint`, fix the value it names, then `mcp-bridge:cache`. |
 | `MCP_BRIDGE_DISABLED` | "is switched off." | The kill switch. `mcp-bridge:kill --revive`. |
 | `MCP_BRIDGE_CONFIRMATION_REQUIRED` | The preview text. | Not a failure. Call again with the `confirm` handle. |
 | `MCP_BRIDGE_CONFIRMATION_EXPIRED` | "That confirmation is no longer valid ..." | Used, expired, forged or arguments changed. Call again without the handle for a fresh preview. |
